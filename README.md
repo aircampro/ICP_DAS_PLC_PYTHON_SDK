@@ -1,4 +1,4 @@
-# ICP-DAS-PLC-python-control-plugin
+# ICP DAS PLC Python SDK
 This is a Repository to add support of python to ICP DAS PLC(Programable Logic Controller). 
 
 # Sample Code Example
