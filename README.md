@@ -5,7 +5,7 @@ This is a Repository to add support of python to ICP DAS PLC(Programable Logic C
 <ol>
   <li>
     Connecting to the PLC -->
-    <code>Room = PLC(IP_Address,Port_number)</code> 
+    <code>Room = ICP_DAS_PLC(IP_Address,Port_number)</code> 
   </li>
   <li>
     Turns on Relay's 1,2,3 -->
