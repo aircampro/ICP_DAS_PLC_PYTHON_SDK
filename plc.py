@@ -1,14 +1,33 @@
+# ref:- https://github.com/aman983/ICP_DAS_PLC_PYTHON_SDK/tree/main
+#
+# example to read ICP DAS PLC over TCP/IP
+#
 import socket
-class PLC():    
+class ICP_DAS_PLC():    
     def __init__(self,IP,PORT):
         self.IP = IP
         self.PORT = PORT
         self.Command = []
         self.type = ""
+        self.dev_con = 0
+    def __del__(self):
+        if self.dev_con == 1:
+            self.dev.close()        
     def Connect(self):
-        self.dev = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-        self.dev.connect((self.IP,self.PORT))
-        #If not connected thed add error 
+        try:
+            self.dev = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+            self.dev_con = 1
+            self.dev.settimeout(10)
+            self.dev.connect((self.IP,self.PORT))
+        except socket.error as e:
+            print("exception : ",e)
+            if self.dev_con == 1
+                self.dev.close()
+                self.dev_con = 0
+    def Close(self):
+        if self.dev_con == 1:
+            self.dev.close()  
+            self.dev_con == 0
     def Send_Command(self,cmd):
         self.dev.send(bytes(cmd))
     def Recive_Data(self):
@@ -16,21 +35,16 @@ class PLC():
         self.input_buffer = repr(data)
         if (self.input_buffer[2:-3] == ">"):
             print("From PLC --> ",self.input_buffer[2:-3])
-
         elif (self.type == "Digital I/O"):
             print("From PLC --> ",self.input_buffer[3:-3])
             return {"Relay Status":self.input_buffer[3:5],"Digital Input status":self.input_buffer[5:-3]}
-
         elif (self.type == "Counter Value"):
             print("From PLC --> ",self.input_buffer[5:-3])
-            return {"Device":self.input_buffer[3:5],"Digital Input status":self.input_buffer[5:-3]}
-        
+            return {"Device":self.input_buffer[3:5],"Digital Input status":self.input_buffer[5:-3]}        
         elif (self.type == "Counter Value"):
             print("From PLC --> ",self.input_buffer[5:-3])
-            return {"Device":self.input_buffer[3:5],"Digital Input status":self.input_buffer[5:-3]}
-        
-
-        self.dev.close()
+            return {"Device":self.input_buffer[3:5],"Digital Input status":self.input_buffer[5:-3]}       
+        #self.dev.close()
     def Relay_control(self,rly):
         self.Connect()
         self.command = [0x40,0x30,0x30,0x31,0x0D]
@@ -76,11 +90,13 @@ class PLC():
         self.Send_Command(self.command)
         self.type = "Digital I/O"
         self.Recive_Data()
+        self.Close()
     def Digital_Input(self):
         self.Connect()
         self.command = [0x40,0x30,0x30,0x0D]
         self.Send_Command(self.command)
         self.ret = self.Recive_Data()
+        self.Close()
         return self.ret
     def Counter_Value(self,pin):
         self.type = "Counter Value"
@@ -94,6 +110,7 @@ class PLC():
         elif (pin == 4):
             self.command = [0x20,0x23,0x30,0x30,0x33,0x0D]
         self.Send_Command(self.command)
+        self.Close()
         return self.Recive_Data()
     def Reset_Counter(self,counter):
         self.Connect()
@@ -106,6 +123,7 @@ class PLC():
         elif (counter == 4):
             self.command = [0x20,0x24,0x30,0x30,0x43,0x33,0X0D]
         self.Send_Command(self.command)
+        self.Close()
         return self.Recive_Data()
     def Status_Latch(self,pin):
         self.Connect()
@@ -118,6 +136,7 @@ class PLC():
         elif (pin == 4):
             self.command = [0x20,0x24,0x30,0x30,0x4c,0x33,0X0D]
         self.Send_Command(self.command)
+        self.Close()
         return self.Recive_Data()
     def Clear_Latch_Status(self):
         self.Connect()
@@ -125,20 +144,25 @@ class PLC():
         self.Send_Command(self.command)
         self.ret = self.Recive_Data()
         print(self.ret)
+        self.Close()
         return self.ret
 
+# this is the list of actions to do for the regression test
+def main():
+    #plc_name = PLC(IP Address , Port number)
+    demo_room1 = ICP_DAS_PLC("10.0.1.88", 10002)                 # connect to the PLC with the given IP address on the port specified
+    demo_room1.Relay_control(1234)                               # read relay ports of the PLC
+    for z in range(0,5):                                         # relays 0-4
+        demo_room1.Relay_control(z)    
+    relays_list = [12,21,13,31,14,41,24,42,34,43,123,132,213,231,321,312,234,243,324,342,432,423,134,143,413,431,341,314,124,142,412,421,241,214]
+    for r in relays_list:
+        demo_room1.Relay_control(r)     
+    demo_room1.Digital_Input()                                   # Get digital input of PLC
+    for c in range(1,5):
+        demo_room1.Counter_Value(c)                              # Get counter value of digital input 1-4 
+        demo_room1.Reset_Counter(c)                              # Reset the counter 1-4 value
+        demo_room1.Status_Latch(c)                               # Get latch status of pin 1-4
+        demo_room1.Clear_Latch_Status()                          # C lears latch status 
 
-#plc_name = PLC(IP Address , Port number)
-demo_room1 = PLC("10.0.1.88", 10002)
-
-demo_room1.Relay_control(1234) # To control relay ports of the PLC 
-
-demo_room1.Digital_Input() # Get digital input of PLC
-
-demo_room1.Counter_Value(1) #Get counter value of digital input 1 
-
-demo_room1.Reset_Counter(1) # Reset the counter 1 value
-
-demo_room1.Status_Latch(1) # Get latch status of pin 1
-
-demo_room1.Clear_Latch_Status() #C lears latch status 
+if __name__ == '__main__':  
+    main()
